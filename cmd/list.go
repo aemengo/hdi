@@ -50,7 +50,7 @@ func performList() error {
 		return err
 	}
 
-	commands = filterCommands(commands, filter)
+	commands = filterCommandsByFilter(commands, filter)
 
 	if len(commands) == 0 {
 		fmt.Println("No results found")
@@ -75,7 +75,7 @@ func performList() error {
 	return nil
 }
 
-func filterCommands(commands []config.Command, query string) []config.Command {
+func filterCommandsByFilter(commands []config.Command, query string) []config.Command {
 	q := strings.TrimSpace(query)
 
 	if q == "" {
