@@ -20,8 +20,6 @@ import (
 	"github.com/aemengo/hdi/config"
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"strings"
 )
 
@@ -96,21 +94,6 @@ func filterCommandsByFilter(commands []config.Command, query string) []config.Co
 	}
 
 	return cmds
-}
-
-func parseCommands() ([]config.Command, error) {
-	data, err := ioutil.ReadFile(cfgFile)
-	if err != nil {
-		return nil, err
-	}
-
-	var cfg config.Config
-	err = yaml.Unmarshal(data, &cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return cfg.Commands, nil
 }
 
 func truncateString(str string, num int) string {

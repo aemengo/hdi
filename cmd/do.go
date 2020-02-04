@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"github.com/aemengo/hdi/config"
 	"github.com/spf13/cobra"
+	"os"
+	"os/exec"
+	"strings"
 )
 
 var inspect bool
@@ -27,13 +30,7 @@ var inspect bool
 // doCmd represents the do command
 var doCmd = &cobra.Command{
 	Use:   "do",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Perform a specified task",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := performDo(args)
 		expectNoError(err)
@@ -41,13 +38,13 @@ to quickly create a Cobra application.`,
 }
 
 func performDo(args []string) error {
+	if len(args) == 0 {
+		return errors.New("missing the action name. Please consult the 'list' command for all action names")
+	}
+
 	commands, err := parseCommands()
 	if err != nil {
 		return err
-	}
-
-	if len(args) == 0 {
-		return errors.New("missing the action name. Please consult the 'list' command for all action names")
 	}
 
 	command, ok := filterCommandsByName(commands, args[0])
@@ -57,9 +54,9 @@ func performDo(args []string) error {
 
 	if inspect {
 		return inspectCommand(command)
+	} else {
+		return runCommand(command, args[1:])
 	}
-
-	return runCommand(command)
 }
 
 func inspectCommand(command config.Command) error {
@@ -70,9 +67,33 @@ func inspectCommand(command config.Command) error {
 	return nil
 }
 
-func runCommand(command config.Command) error {
-	fmt.Println("running command...")
-	
+func runCommand(command config.Command, args []string) error {
+	if len(command.Args) != len(args) {
+		return errors.New("the specified task requires the following arguments: " + strings.Join(command.Args, ", "))
+	}
+
+	for index, step := range command.Steps {
+		var script = step.Script
+
+		for j, arg := range command.Args {
+			identifier := fmt.Sprintf("<%s>", arg)
+
+			if strings.Contains(script, identifier) {
+				script = strings.Replace(script, identifier, args[j], -1)
+			}
+		}
+
+		boldWhite.Printf("Step %d/%d : %s\n", index+1, len(command.Steps), script)
+
+		cmd := exec.Command("bash", "-c", script)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err := cmd.Run()
+		if err != nil {
+			return errors.New("")
+		}
+	}
+
 	boldGreen.Println("Success")
 	return nil
 }

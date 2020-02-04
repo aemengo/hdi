@@ -17,8 +17,10 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/aemengo/hdi/config"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -37,16 +39,7 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "hdi",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+	Short: "A tool for managing and invoking common command-line tasks",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -84,6 +77,39 @@ func initConfig() {
 	}
 }
 
+func writeConfig(cfg config.Config) error {
+	cfgData, err := yaml.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(cfgFile, cfgData, 0600)
+}
+
+func parseConfig() (config.Config, error) {
+	data, err := ioutil.ReadFile(cfgFile)
+	if err != nil {
+		return config.Config{}, err
+	}
+
+	var cfg config.Config
+	err = yaml.Unmarshal(data, &cfg)
+	if err != nil {
+		return config.Config{}, err
+	}
+
+	return cfg, nil
+}
+
+func parseCommands() ([]config.Command, error) {
+	cfg, err := parseConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	return cfg.Commands, nil
+}
+
 func notExist(path string) bool {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
@@ -98,6 +124,11 @@ func expectNoError(err error) {
 		return
 	}
 
-	fmt.Printf(boldRed.Sprint("Error")+"\n%s.\n", err)
+	if err.Error() == "" {
+		fmt.Println(boldRed.Sprint("Error"))
+	} else {
+		fmt.Printf(boldRed.Sprint("Error")+"\n%s.\n", err)
+	}
+
 	os.Exit(1)
 }
