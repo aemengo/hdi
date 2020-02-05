@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aemengo/hdi/config"
+	"github.com/juju/ansiterm"
 	"github.com/spf13/cobra"
 	"os"
 	"os/exec"
@@ -85,9 +86,12 @@ func runCommand(command config.Command, args []string) error {
 
 		boldWhite.Printf("Step %d/%d : %s\n", index+1, len(command.Steps), script)
 
+		redStderr := ansiterm.NewWriter(os.Stderr)
+		redStderr.SetForeground(ansiterm.Red)
+
 		cmd := exec.Command("bash", "-c", script)
 		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		cmd.Stderr = redStderr
 		err := cmd.Run()
 		if err != nil {
 			return errors.New("")
